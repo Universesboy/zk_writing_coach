@@ -48,7 +48,7 @@ export function ReportClientShell({ report, apiBase }: { report: StudentReport; 
 
   return (
     <main className="reportPage">
-      <ReportActions />
+      <ReportActions studentName={report.student_name} />
 
       <section className="reportViewTabs noPrint">
         <button className={view === 'parent' ? 'tabBtn tabBtnActive' : 'tabBtn'} onClick={() => setView('parent')}>
