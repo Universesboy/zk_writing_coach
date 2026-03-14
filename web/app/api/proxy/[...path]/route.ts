@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = 'http://127.0.0.1:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE || 'http://127.0.0.1:8000';
 
-async function handleProxy(request: NextRequest, { params }: { params: { path: string[] } }) {
+async function handleProxy(request: NextRequest, props: { params: Promise<{ path: string[] }> }) {
   try {
-    const resolvedParams = await params;
-    const backendPath = resolvedParams.path.join('/');
+    const params = await props.params;
+    const backendPath = params.path.join('/');
     const searchParams = request.nextUrl.searchParams.toString();
     const targetUrl = `${BACKEND_URL}/${backendPath}${searchParams ? `?${searchParams}` : ''}`;
 
@@ -33,7 +33,7 @@ async function handleProxy(request: NextRequest, { params }: { params: { path: s
     });
   } catch (error) {
     console.error('Proxy error:', error);
-    return NextResponse.json({ error: 'Failed to connect to backend' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error (Proxy)' }, { status: 500 });
   }
 }
 
