@@ -32,6 +32,12 @@ export function ProductHeader({ apiBase, latestEngine, historyCount }: Props) {
           <span>后端地址</span>
           <strong>{apiBase}</strong>
           <p>前端通过这个 API 与 FastAPI 服务联通。</p>
+          <p style={{ marginTop: '12px' }}>
+            <a href="/admin" style={{ color: 'var(--accent)', textDecoration: 'underline', fontSize: '13px', fontWeight: 'bold' }}>
+              ⚙️ 进入真题库录入中心
+            </a>
+          </p>
+        
         </article>
       </div>
     </section>

@@ -83,6 +83,15 @@ class Suggestion(BaseModel):
     reason: str
 
 
+
+class ExamIngestResponse(BaseModel):
+    status: str
+    exam_name: str
+    prompt_text: str
+    requirements: str
+    standard_essay: str
+    scoring_criteria: str
+
 class GradeRequest(BaseModel):
     prompt: str = Field(..., description="作文题目")
     essay: str = Field(..., min_length=1, description="学生作文内容")
@@ -168,6 +177,29 @@ def get_conn():
 
 def init_db() -> None:
     with get_conn() as conn:
+        conn.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS exam_questions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exam_name TEXT NOT NULL,
+                prompt_text TEXT NOT NULL,
+                requirements TEXT,
+                created_at TEXT NOT NULL
+            )
+            '''
+        )
+        conn.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS exam_answers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                question_id INTEGER NOT NULL,
+                standard_essay TEXT NOT NULL,
+                scoring_criteria TEXT,
+                FOREIGN KEY (question_id) REFERENCES exam_questions(id)
+            )
+            '''
+        )
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS grading_records (
@@ -595,6 +627,94 @@ async def grade_image_essay(
         print(f"Vision API error: {e}")
         # If image fails, return a 500 so frontend knows
         raise HTTPException(status_code=500, detail=f"图片解析与批改失败: {str(e)}")
+
+
+@app.post('/knowledge/ingest', response_model=ExamIngestResponse)
+async def ingest_exam_knowledge(
+    exam_name: str = Form(...),
+    question_img: UploadFile = File(...),
+    answer_img: UploadFile = File(...)
+):
+    try:
+        # Read and encode images
+        q_bytes = await question_img.read()
+        a_bytes = await answer_img.read()
+        q_b64 = base64.b64encode(q_bytes).decode('utf-8')
+        a_b64 = base64.b64encode(a_bytes).decode('utf-8')
+        
+        system_prompt = """你是一个专业的数据录入员。用户会提供两张图片：一张是中高考英语作文的【题目要求】，另一张是对应的【标准答案或范文】。
+请精确识别文字，并将其结构化为以下JSON格式：
+{
+  "prompt_text": "完整的题目背景描述，如：假定你是李华...",
+  "requirements": "具体的写作要求，如：1.字数100词左右；2.包含所有要点...",
+  "standard_essay": "官方给出的标准范文全文",
+  "scoring_criteria": "如果图片中有评分细则，请提取，否则留空"
+}
+不要编造，严格根据图片内容提取。"""
+
+        headers = {
+            "Authorization": f"Bearer {ZENMUX_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        
+        body = {
+            "model": "openai/gpt-5.4",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "图1是题目，图2是答案。请提取。"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{q_b64}"}},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{a_b64}"}}
+                    ]
+                }
+            ],
+            "temperature": 0.1,
+            "response_format": {"type": "json_object"},
+        }
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(f"{ZENMUX_BASE_URL}/chat/completions", headers=headers, json=body)
+            response.raise_for_status()
+            data = response.json()
+            
+        parsed = extract_json(data["choices"][0]["message"]["content"])
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        # Save to database
+        with get_conn() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                '''
+                INSERT INTO exam_questions (exam_name, prompt_text, requirements, created_at)
+                VALUES (?, ?, ?, ?)
+                ''',
+                (exam_name, parsed.get("prompt_text", ""), parsed.get("requirements", ""), now)
+            )
+            q_id = cursor.lastrowid
+            
+            cursor.execute(
+                '''
+                INSERT INTO exam_answers (question_id, standard_essay, scoring_criteria)
+                VALUES (?, ?, ?)
+                ''',
+                (q_id, parsed.get("standard_essay", ""), parsed.get("scoring_criteria", ""))
+            )
+            
+        return ExamIngestResponse(
+            status="success",
+            exam_name=exam_name,
+            prompt_text=parsed.get("prompt_text", ""),
+            requirements=parsed.get("requirements", ""),
+            standard_essay=parsed.get("standard_essay", ""),
+            scoring_criteria=parsed.get("scoring_criteria", "")
+        )
+
+    except Exception as e:
+        print(f"Ingestion API error: {e}")
+        raise HTTPException(status_code=500, detail=f"真题解析录入失败: {str(e)}")
 
 @app.get('/')
 def root():
