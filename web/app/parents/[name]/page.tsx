@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { ParentSummaryCard } from '../../components/ParentSummaryCard'
 import { ScoreTrendChart } from '../../components/ScoreTrendChart'
 
-const API_BASE = 'http://127.0.0.1:8000'
+const API_BASE = 'https://zk-writing-coach.onrender.com'
 
 type TagCount = { tag: string; count: number }
 type Suggestion = { original: string; improved: string; reason: string }

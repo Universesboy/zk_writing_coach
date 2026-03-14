@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ReportClientShell, StudentReport } from '../../components/ReportClientShell'
 
-const API_BASE = 'http://127.0.0.1:8000'
+const API_BASE = 'https://zk-writing-coach.onrender.com'
 
 async function getReport(name: string): Promise<StudentReport> {
   const res = await fetch(`${API_BASE}/students/${encodeURIComponent(name)}/report`, {

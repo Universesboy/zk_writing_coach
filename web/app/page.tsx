@@ -14,7 +14,7 @@ import { Toast } from './components/Toast'
 import { WorkspaceSection } from './components/WorkspaceSection'
 import { GradeResponse, HistoryItem } from './components/types'
 
-const API_BASE = '/api/proxy'
+const API_BASE = 'https://zk-writing-coach.onrender.com'
 
 export default function Page() {
   const [prompt, setPrompt] = useState('请介绍你最喜欢的一位老师')
