@@ -25,6 +25,7 @@ type Props = {
   loading: boolean
   error: string
   onSubmit: () => void
+  onImageSubmit?: (file: File) => void
 }
 
 export function EssayForm(props: Props) {
@@ -62,6 +63,22 @@ export function EssayForm(props: Props) {
     return props.essay.trim() ? props.essay.trim().split(/\s+/).length : 0
   }, [props.essay])
 
+  
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!props.studentName.trim() || !props.prompt.trim()) {
+      alert("拍照批改前，请先填写「学生姓名」和「作文题目」！")
+      return
+    }
+    if (props.onImageSubmit) {
+       props.onImageSubmit(file)
+    }
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
   const handleRandomPrompt = () => {
     const randomIndex = Math.floor(Math.random() * RANDOM_PROMPTS.length)
     props.setPrompt(RANDOM_PROMPTS[randomIndex])
@@ -94,7 +111,25 @@ export function EssayForm(props: Props) {
       <div className="field">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>作文内容</span>
-          <div>
+          
+          <div style={{display: 'flex', gap: '8px'}}>
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment"
+              style={{ display: 'none' }} 
+              ref={imageInputRef} 
+              onChange={handleImageUpload} 
+            />
+            <button 
+              type="button" 
+              onClick={() => imageInputRef.current?.click()}
+              className="secondaryBtn"
+              style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px', borderColor: 'var(--accent)', color: 'var(--accent)' }}
+              disabled={props.loading}
+            >
+              📷 拍照批改
+            </button>
             <input 
               type="file" 
               accept=".txt,.pdf,.docx" 

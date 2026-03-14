@@ -57,6 +57,41 @@ export default function Page() {
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  
+  async function handleImageSubmit(file: File) {
+    setLoading(true)
+    setError('')
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('prompt', prompt)
+      if (studentName) formData.append('student_name', studentName)
+
+      const res = await fetch(`${API_BASE}/grade/image`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        throw new Error(`请求失败: ${res.status}`)
+      }
+
+      const data = await res.json()
+      setResult(data)
+      await fetchHistory()
+      setToast({
+        message: '照片解析并批改完成，结果已保存。',
+        tone: 'success',
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '请求失败'
+      setError(message)
+      setToast({ message, tone: 'error' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleSubmit() {
     setLoading(true)
     setError('')
@@ -141,6 +176,7 @@ export default function Page() {
         >
           <section className="grid threeCols">
             <EssayForm
+              onImageSubmit={handleImageSubmit}
               prompt={prompt}
               setPrompt={setPrompt}
               studentName={studentName}
