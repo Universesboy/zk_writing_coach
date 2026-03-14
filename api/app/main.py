@@ -11,8 +11,11 @@ from typing import Any, List, Optional
 from urllib.parse import unquote
 from uuid import uuid4
 
+import io
+import PyPDF2
+import docx
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -60,7 +63,7 @@ ALLOWED_ERROR_TAGS = ["时态", "拼写", "连接词", "语法", "结构", "审�
 app = FastAPI(
     title="ZK Writing Coach API",
     version="0.5.0",
-    description="中考英语作文教练后端 API（真实 AI 批改 + SQLite 持久化 + 报告接口）",
+    description="英语作文教练后端 API（支持中高考、文件解析）（真实 AI 批改 + SQLite 持久化 + 报告接口）",
 )
 
 app.add_middleware(
@@ -633,6 +636,40 @@ def put_student_note(student_name: str, payload: StudentNotePayload):
             (decoded_name, payload.coach_note, now),
         )
     return {'student_name': decoded_name, 'coach_note': payload.coach_note, 'updated_at': now}
+
+
+
+@app.post('/upload/document')
+async def upload_document(file: UploadFile = File(...)):
+    filename = file.filename.lower()
+    content_text = ""
+    
+    try:
+        if filename.endswith('.txt'):
+            content_bytes = await file.read()
+            content_text = content_bytes.decode('utf-8')
+            
+        elif filename.endswith('.pdf'):
+            content_bytes = await file.read()
+            pdf_reader = PyPDF2.PdfReader(io.BytesIO(content_bytes))
+            for page in pdf_reader.pages:
+                text = page.extract_text()
+                if text:
+                    content_text += text + "\n"
+                    
+        elif filename.endswith('.docx'):
+            content_bytes = await file.read()
+            doc = docx.Document(io.BytesIO(content_bytes))
+            for para in doc.paragraphs:
+                content_text += para.text + "\n"
+                
+        else:
+            raise HTTPException(status_code=400, detail="不支持的文件格式。目前仅支持 .txt, .pdf, .docx")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"文件解析失败: {str(e)}")
+        
+    return {"filename": file.filename, "extracted_text": content_text.strip()}
 
 
 @app.post('/grade', response_model=GradeResponse)

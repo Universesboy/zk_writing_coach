@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useRef } from 'react'
 
 const RANDOM_PROMPTS = [
   "你最喜欢的一位老师 (Your favorite teacher)",
@@ -28,6 +28,36 @@ type Props = {
 }
 
 export function EssayForm(props: Props) {
+  
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || '/api/proxy'}/upload/document`, {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) throw new Error('文件解析失败，请重试。')
+      
+      const data = await res.json()
+      props.setEssay(data.extracted_text || '未识别到文本内容。')
+    } catch (err) {
+      console.error(err)
+      alert(err instanceof Error ? err.message : '上传失败。')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   const wordCount = useMemo(() => {
     return props.essay.trim() ? props.essay.trim().split(/\s+/).length : 0
   }, [props.essay])
@@ -61,10 +91,30 @@ export function EssayForm(props: Props) {
         <input value={props.studentName} onChange={(e) => props.setStudentName(e.target.value)} placeholder="例如 Colin" />
       </label>
 
-      <label className="field">
-        <span>作文内容</span>
-        <textarea value={props.essay} onChange={(e) => props.setEssay(e.target.value)} rows={14} placeholder="在此输入你的英文作文..." />
-      </label>
+      <div className="field">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>作文内容</span>
+          <div>
+            <input 
+              type="file" 
+              accept=".txt,.pdf,.docx" 
+              style={{ display: 'none' }} 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+            />
+            <button 
+              type="button" 
+              onClick={() => fileInputRef.current?.click()}
+              className="secondaryBtn"
+              style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px' }}
+              disabled={uploading}
+            >
+              {uploading ? '解析中...' : '📄 导入文档'}
+            </button>
+          </div>
+        </div>
+        <textarea value={props.essay} onChange={(e) => props.setEssay(e.target.value)} rows={14} placeholder="在此输入你的英文作文，或点击上方导入Word/PDF/TXT文档..." disabled={uploading} />
+      </div>
 
       <div className="toolbar">
         <div className="meta">

@@ -9,9 +9,9 @@ export function ProductHeader({ apiBase, latestEngine, historyCount }: Props) {
     <section className="heroShell">
       <div className="heroCopy">
         <p className="eyebrow">ZK WRITING COACH</p>
-        <h1>中考英语作文教练</h1>
+        <h1>英语作文教练</h1>
         <p className="subtitle">
-          为中考英语写作训练设计的批改工作台：提交作文、即时评分、句子优化、润色参考、历史回看，一条链路完整闭环。
+          为中考/高考英语写作训练设计的批改工作台：提交作文、即时评分、句子优化、润色参考、历史回看，一条链路完整闭环。
         </p>
       </div>
 
