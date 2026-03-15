@@ -7,7 +7,9 @@ const API_BASE = 'https://zk-writing-coach.onrender.com' // Using production API
 
 export default function AdminPage() {
   const [examName, setExamName] = useState('')
+  const [qText, setQText] = useState('')
   const [qImage, setQImage] = useState<File | null>(null)
+  const [aText, setAText] = useState('')
   const [aImage, setAImage] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
@@ -17,8 +19,8 @@ export default function AdminPage() {
   const aInputRef = useRef<HTMLInputElement>(null)
 
   const handleIngest = async () => {
-    if (!examName || !qImage || !aImage) {
-      setError('请填写真题名称，并上传题目和答案的两张照片。')
+    if (!examName || (!qImage && !qText) || (!aImage && !aText)) {
+      setError('请填写真题名称，并提供题目和答案（文字或图片均可）。')
       return
     }
     setLoading(true)
@@ -28,8 +30,10 @@ export default function AdminPage() {
     try {
       const formData = new FormData()
       formData.append('exam_name', examName)
-      formData.append('question_img', qImage)
-      formData.append('answer_img', aImage)
+      formData.append('question_text', qText)
+      formData.append('answer_text', aText)
+      if (qImage) formData.append('question_img', qImage)
+      if (aImage) formData.append('answer_img', aImage)
 
       const res = await fetch(`${API_BASE}/knowledge/ingest`, {
         method: 'POST',
@@ -67,23 +71,39 @@ export default function AdminPage() {
 
         <div className="grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
           <div className="field">
-            <span>试卷【题目】照片</span>
-            <div style={{ padding: '16px', border: '2px dashed var(--line)', borderRadius: '12px', textAlign: 'center', background: '#fff' }}>
-              <input type="file" accept="image/*" ref={qInputRef} style={{ display: 'none' }} onChange={e => setQImage(e.target.files?.[0] || null)} />
-              <button type="button" className="secondaryBtn" onClick={() => qInputRef.current?.click()}>
-                {qImage ? '✅ 已选择图片' : '上传题目照片'}
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span>试卷【题目】区</span>
+              <div>
+                <input type="file" accept="image/*" ref={qInputRef} style={{ display: 'none' }} onChange={e => setQImage(e.target.files?.[0] || null)} />
+                <button type="button" className="secondaryBtn" style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px' }} onClick={() => qInputRef.current?.click()}>
+                  {qImage ? '✅ 图片已附' : '📸 附加参考图片'}
+                </button>
+              </div>
             </div>
+            <textarea 
+              value={qText} 
+              onChange={e => setQText(e.target.value)} 
+              rows={8} 
+              placeholder="请粘贴题目原文字，若有图表可点击右上方按钮附加试卷照片..." 
+            />
           </div>
 
           <div className="field">
-            <span>试卷【标准答案/范文】照片</span>
-            <div style={{ padding: '16px', border: '2px dashed var(--line)', borderRadius: '12px', textAlign: 'center', background: '#fff' }}>
-              <input type="file" accept="image/*" ref={aInputRef} style={{ display: 'none' }} onChange={e => setAImage(e.target.files?.[0] || null)} />
-              <button type="button" className="secondaryBtn" onClick={() => aInputRef.current?.click()}>
-                {aImage ? '✅ 已选择图片' : '上传答案照片'}
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span>官方【标准范文】区</span>
+              <div>
+                <input type="file" accept="image/*" ref={aInputRef} style={{ display: 'none' }} onChange={e => setAImage(e.target.files?.[0] || null)} />
+                <button type="button" className="secondaryBtn" style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px' }} onClick={() => aInputRef.current?.click()}>
+                  {aImage ? '✅ 图片已附' : '📸 附加参考图片'}
+                </button>
+              </div>
             </div>
+            <textarea 
+              value={aText} 
+              onChange={e => setAText(e.target.value)} 
+              rows={8} 
+              placeholder="请直接粘贴官方给出的满分范文或评分细则，或直接附图..." 
+            />
           </div>
         </div>
 
