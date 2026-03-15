@@ -67,7 +67,7 @@ export default function Page() {
       formData.append('prompt', prompt)
       if (studentName) formData.append('student_name', studentName)
 
-      const res = await fetch(`${API_BASE}/grade/image`, {
+      const res = await fetch('https://zk-writing-coach.onrender.com/grade/image', {
         method: 'POST',
         body: formData,
       })

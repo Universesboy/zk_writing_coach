@@ -42,7 +42,7 @@ export function EssayForm(props: Props) {
     formData.append('file', file)
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE || '/api/proxy'}/upload/document`, {
+      const res = await fetch('https://zk-writing-coach.onrender.com/upload/document', {
         method: 'POST',
         body: formData,
       })
