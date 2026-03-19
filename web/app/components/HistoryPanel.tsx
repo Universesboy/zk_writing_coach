@@ -24,6 +24,7 @@ export function HistoryPanel({
   onRefresh,
   onLoad,
   onViewDetail,
+  onDelete,
 }: Props) {
   return (
     <div className="panel historyPanel premiumPanel">
