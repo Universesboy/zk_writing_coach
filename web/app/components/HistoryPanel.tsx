@@ -12,6 +12,7 @@ type Props = {
   onRefresh: () => void
   onLoad: (item: HistoryItem) => void
   onViewDetail: (item: HistoryItem) => void
+  onDelete?: (id: string) => void
 }
 
 export function HistoryPanel({
@@ -73,6 +74,10 @@ export function HistoryPanel({
                 </button>
                 <button className="linkBtn" onClick={() => onLoad(item)}>
                   载入编辑器
+                </button>
+
+                <button className="linkBtn" style={{ color: 'var(--danger)' }} onClick={(e) => { e.stopPropagation(); onDelete?.(item.submission_id); }}>
+                  删除
                 </button>
               </div>
             </article>

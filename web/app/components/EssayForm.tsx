@@ -116,8 +116,7 @@ export function EssayForm(props: Props) {
             <input 
               type="file" 
               accept="image/*" 
-              capture="environment"
-              style={{ display: 'none' }} 
+                            style={{ display: 'none' }} 
               ref={imageInputRef} 
               onChange={handleImageUpload} 
             />
@@ -128,7 +127,7 @@ export function EssayForm(props: Props) {
               style={{ padding: '4px 12px', fontSize: '12px', borderRadius: '6px', borderColor: 'var(--accent)', color: 'var(--accent)' }}
               disabled={props.loading}
             >
-              📷 拍照批改
+              📷 拍照/上传图片
             </button>
             <input 
               type="file" 

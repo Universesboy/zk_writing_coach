@@ -900,6 +900,15 @@ async def upload_document(file: UploadFile = File(...)):
     return {"filename": file.filename, "extracted_text": content_text.strip()}
 
 
+
+@app.delete('/history/{submission_id}')
+def delete_history_item(submission_id: str):
+    with get_conn() as conn:
+        cursor = conn.execute("DELETE FROM grading_records WHERE submission_id = ?", (submission_id,))
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="记录不存在")
+    return {"status": "success", "deleted_id": submission_id}
+
 @app.post('/grade', response_model=GradeResponse)
 async def grade_essay(payload: GradeRequest):
     try:

@@ -126,6 +126,34 @@ export default function Page() {
     }
   }
 
+  
+  async function handleDeleteHistory(submissionId: string) {
+    if (!window.confirm('确定要删除这条批改记录吗？此操作不可恢复。')) return;
+    
+    try {
+      const res = await fetch(`${API_BASE}/history/${submissionId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) throw new Error('删除失败');
+      
+      setToast({ message: '记录已删除', tone: 'success' });
+      
+      // If the deleted item is currently selected or viewed, clear it
+      if (result?.submission_id === submissionId) {
+        setResult(null);
+        setPrompt('');
+        setEssay('');
+      }
+      if (selectedHistory?.submission_id === submissionId) {
+        setSelectedHistory(null);
+      }
+      
+      await fetchHistory();
+    } catch (err) {
+      setToast({ message: err instanceof Error ? err.message : '删除失败', tone: 'error' });
+    }
+  }
+
   const latestEngine = useMemo(() => {
     return result?.engine || history[0]?.engine || null
   }, [result, history])
@@ -198,6 +226,7 @@ export default function Page() {
               onStudentFilterChange={setSelectedStudent}
               onRefresh={fetchHistory}
               onViewDetail={(item) => setSelectedHistory(item)}
+              onDelete={handleDeleteHistory}
               onLoad={(item) => {
                 setResult(item)
                 setPrompt(item.prompt)
